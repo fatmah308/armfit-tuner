@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Overview — ArmFit Tuner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0b; --panel: #0f0f11; --border: #26262a;
+  --text: #d8d8dc; --text-dim: #6b6b72;
+  --baseline: #8a8a92; --accent: #e8a84f; --accent-dim: #6b5230;
+  --good: #7cc48a; --bad: #d97b7b;
+  --mono: 'JetBrains Mono', 'Courier New', monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--mono); font-size: 13px; }
+.wrap { max-width: 880px; margin: 0 auto; padding: 0 24px 40px; }
+
+.navbar {
+  position: sticky; top: 0; z-index: 10;
+  background: rgba(10,10,11,0.95); backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 4px;
+  padding: 14px 24px; overflow-x: auto;
+}
+.navbar .brand { font-weight: 800; letter-spacing: 0.03em; margin-right: 20px; white-space: nowrap; }
+.navbar .brand span { color: var(--accent); }
+.navbar a {
+  color: var(--text-dim); text-decoration: none; font-size: 11px;
+  letter-spacing: 0.04em; text-transform: uppercase;
+  padding: 7px 12px; border-radius: 4px; white-space: nowrap;
+}
+.navbar a:hover { color: var(--text); background: var(--panel); }
+.navbar a.active { color: var(--accent); background: rgba(232,168,79,0.1); }
+
+header.page-header { margin: 28px 0 20px; border-bottom: 1px solid var(--border); padding-bottom: 16px; }
+h1 { font-size: 20px; letter-spacing: 0.03em; margin-bottom: 6px; }
+.meta { color: var(--text-dim); font-size: 11px; }
+
+.panel { border: 1px solid var(--border); background: var(--panel); border-radius: 6px; padding: 20px; margin-bottom: 20px; }
+h2 { font-size: 14px; margin-bottom: 14px; color: var(--accent); }
+.chart { width: 100%; height: auto; display: block; }
+.bar-baseline { fill: var(--baseline); }
+.bar-kleidiai { fill: var(--accent); }
+.bar-label { fill: var(--text); font-size: 10px; font-family: var(--mono); }
+.axis-label { fill: var(--text-dim); font-size: 10px; font-family: var(--mono); }
+.chart-empty { fill: var(--text-dim); font-size: 12px; }
+.chart-legend { display: flex; gap: 16px; justify-content: center; margin: 6px 0 16px; font-size: 11px; color: var(--text-dim); }
+.legend-item { display: flex; align-items: center; gap: 6px; }
+.swatch { width: 10px; height: 10px; display: inline-block; border-radius: 2px; }
+.swatch.baseline { background: var(--baseline); }
+.swatch.kleidiai { background: var(--accent); }
+.warning { background: rgba(217,123,123,0.12); border: 1px solid var(--bad); color: var(--bad); padding: 8px 12px; border-radius: 4px; font-size: 11px; margin-bottom: 12px; }
+.recommendation { background: rgba(232,168,79,0.08); border: 1px solid var(--accent-dim); padding: 10px 14px; border-radius: 4px; font-size: 12px; margin-bottom: 16px; }
+.rec-label { color: var(--text-dim); }
+.rec-value { color: var(--accent); font-weight: 700; }
+table { width: 100%; border-collapse: collapse; font-size: 11px; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+th { color: var(--text-dim); font-weight: 600; text-transform: uppercase; font-size: 9px; letter-spacing: 0.05em; }
+.build-kleidiai { color: var(--accent); }
+.pattern-list { list-style: none; font-size: 12px; line-height: 2; }
+.pattern-note { color: var(--text-dim); font-size: 11px; margin-top: 10px; }
+footer { text-align: center; color: var(--text-dim); font-size: 10px; margin-top: 24px; }
+
+/* Overview cards */
+.card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-bottom: 20px; }
+.card { border: 1px solid var(--border); background: var(--panel); border-radius: 6px; padding: 18px; }
+.card h3 { font-size: 13px; color: var(--accent); margin-bottom: 10px; }
+.card .headline { font-size: 26px; font-weight: 800; margin: 6px 0; }
+.card .headline .unit { font-size: 12px; color: var(--text-dim); font-weight: 400; }
+.card .sub { font-size: 11px; color: var(--text-dim); margin-bottom: 12px; }
+.card a.view-link { display: inline-block; margin-top: 6px; color: var(--accent); text-decoration: none; font-size: 11px; }
+.card a.view-link:hover { text-decoration: underline; }
+
+/* Insights page */
+.q-btn {
+  display: block; width: 100%; text-align: left;
+  background: var(--panel); border: 1px solid var(--border); color: var(--text);
+  font-family: var(--mono); font-size: 12px; padding: 12px 16px; border-radius: 6px;
+  margin-bottom: 8px; cursor: pointer;
+}
+.q-btn:hover { border-color: var(--accent-dim); }
+.q-btn.active { border-color: var(--accent); color: var(--accent); }
+.answer {
+  display: none; border: 1px solid var(--accent-dim); background: rgba(232,168,79,0.06);
+  border-radius: 6px; padding: 16px; margin: -4px 0 16px; font-size: 12px; line-height: 1.7;
+}
+.answer.open { display: block; }
+.answer .num { color: var(--accent); font-weight: 700; }
+</style>
+</head>
+<body>
+<nav class="navbar"><span class="brand">ARM<span>FIT</span></span><a href="index.html" class="active">Overview</a><a href="model_qwen-qwen2-5-0-5b-instruct.html" class="">Qwen2.5-0.5B</a><a href="model_qwen-qwen2-5-1-5b-instruct.html" class="">Qwen2.5-1.5B</a><a href="comparison.html" class="">Comparison</a><a href="insights.html" class="">Insights</a></nav>
+<div class="wrap">
+
+    <header class="page-header">
+      <h1>ARM<span style="color:var(--accent);">FIT</span> // REPORT OVERVIEW</h1>
+      <div class="meta">device: RF8XB0WQZ3J · free RAM at test time: ~4325 MB · 2 model(s) tested</div>
+    </header>
+    <div class="card-grid">
+        <div class="card">
+          <h3>Qwen/Qwen2.5-0.5B-Instruct</h3>
+          <div class="headline">19.3<span class="unit"> tok/s decode</span></div>
+          <div class="sub">Q4_0 / kleidiai — 335.8 MB</div>
+          <a class="view-link" href="model_qwen-qwen2-5-0-5b-instruct.html">View full results →</a>
+        </div>
+        
+        <div class="card">
+          <h3>Qwen/Qwen2.5-1.5B-Instruct</h3>
+          <div class="headline">9.27<span class="unit"> tok/s decode</span></div>
+          <div class="sub">Q4_0 / kleidiai — 891.6 MB</div>
+          <a class="view-link" href="model_qwen-qwen2-5-1-5b-instruct.html">View full results →</a>
+        </div>
+        </div>
+    <div class="panel"><h2>Multiple models tested</h2><p style="font-size:12px;color:var(--text-dim);line-height:1.7;">See the <a href="comparison.html" style="color:var(--accent);">Comparison page</a> to check whether the KleidiAI speedup holds consistently across model sizes.</p></div>
+    <div class="panel"><h2>Have a question about these results?</h2><p style="font-size:12px;color:var(--text-dim);line-height:1.7;">Visit <a href="insights.html" style="color:var(--accent);">Insights</a> for click-to-reveal explanations grounded in this run's actual numbers.</p></div>
+    
+<footer>Generated by armfit — all figures sourced from this run's own measured data</footer>
+</div>
+<script id="report-data" type="application/json">{
+  "models": [
+    "Qwen/Qwen2.5-0.5B-Instruct",
+    "Qwen/Qwen2.5-1.5B-Instruct"
+  ],
+  "device": "RF8XB0WQZ3J",
+  "free_ram_mb": 4325,
+  "results": [
+    {
+      "model": "Qwen/Qwen2.5-0.5B-Instruct",
+      "quant": "F16",
+      "build": "baseline",
+      "size_mb": 948.1,
+      "prefill_tps": 38.06,
+      "decode_tps": 7.56,
+      "ttft_ms": 1681.6,
+      "perplexity": null,
+      "fits_in_ram": true,
+      "ppl_delta": null,
+      "quality_suspicious": false
+    },
+    {
+      "model": "Qwen/Qwen2.5-0.5B-Instruct",
+      "quant": "F16",
+      "build": "kleidiai",
+      "size_mb": 948.1,
+      "prefill_tps": 37.58,
+      "decode_tps": 7.47,
+      "ttft_ms": 1703.0,
+      "perplexity": null,
+      "fits_in_ram": true,
+      "ppl_delta": null,
+      "quality_suspicious": false
+    },
+    {
+      "model": "Qwen/Qwen2.5-0.5B-Instruct",
+      "quant": "Q4_0",
+      "build": "baseline",
+      "size_mb": 335.8,
+      "prefill_tps": 21.95,
+      "decode_tps": 12.35,
+      "ttft_ms": 2915.7,
+      "perplexity": null,
+      "fits_in_ram": true,
+      "ppl_delta": null,
+      "quality_suspicious": false
+    },
+    {
+      "model": "Qwen/Qwen2.5-0.5B-Instruct",
+      "quant": "Q4_0",
+      "build": "kleidiai",
+      "size_mb": 335.8,
+      "prefill_tps": 87.47,
+      "decode_tps": 19.3,
+      "ttft_ms": 731.7,
+      "perplexity": null,
+      "fits_in_ram": true,
+      "ppl_delta": null,
+      "quality_suspicious": false
+    },
+    {
+      "model": "Qwen/Qwen2.5-0.5B-Instruct",
+      "quant": "Q8_0",
+      "build": "baseline",
+      "size_mb": 506.5,
+      "prefill_tps": 33.18,
+      "decode_tps": 11.47,
+      "ttft_ms": 1928.9,
+      "perplexity": null,
+      "fits_in_ram": true,
+      "ppl_delta": null,
+      "quality_suspicious": false
+    },
+    {
+      "model": "Qwen/Qwen2.5-0.5B-Instruct",
+      "quant": "Q8_0",
+      "build": "kleidiai",
+      "size_mb": 506.5,
+      "prefill_tps": 155.18,
+      "decode_tps": 17.32,
+      "ttft_ms": 412.4,
+      "perplexity": null,
+      "fits_in_ram": true,
+      "ppl_delta": null,
+      "quality_suspicious": false
+    },
+    {
+      "model": "Qwen/Qwen2.5-1.5B-Instruct",
+      "quant": "F16",
+      "build": "baseline",
+      "size_mb": 2950.4,
+      "prefill_tps": 8.81,
+      "decode_tps": 2.57,
+      "ttft_ms": 7264.5,
+      "perplexity": null,
+      "fits_in_ram": true,
+      "ppl_delta": null,
+      "quality_suspicious": false
+    },
+    {
+      "model": "Qwen/Qwen2.5-1.5B-Instruct",
+      "quant": "F16",
+      "build": "kleidiai",
+      "size_mb": 2950.4,
+      "prefill_tps": 11.02,
+      "decode_tps": 2.74,
+      "ttft_ms": 5807.6,
+      "perplexity": null,
+      "fits_in_ram": true,
+      "ppl_delta": null,
+      "quality_suspicious": false
+    },
+    {
+      "model": "Qwen/Qwen2.5-1.5B-Instruct",
+      "quant": "Q4_0",
+      "build": "baseline",
+      "size_mb": 891.6,
+      "prefill_tps": 7.42,
+      "decode_tps": 4.98,
+      "ttft_ms": 8625.3,
+      "perplexity": null,
+      "fits_in_ram": true,
+      "ppl_delta": null,
+      "quality_suspicious": false
+    },
+    {
+      "model": "Qwen/Qwen2.5-1.5B-Instruct",
+      "quant": "Q4_0",
+      "build": "kleidiai",
+      "size_mb": 891.6,
+      "prefill_tps": 33.88,
+      "decode_tps": 9.27,
+      "ttft_ms": 1889.0,
+      "perplexity": null,
+      "fits_in_ram": true,
+      "ppl_delta": null,
+      "quality_suspicious": false
+    },
+    {
+      "model": "Qwen/Qwen2.5-1.5B-Instruct",
+      "quant": "Q8_0",
+      "build": "baseline",
+      "size_mb": 1570.3,
+      "prefill_tps": 9.37,
+      "decode_tps": 5.23,
+      "ttft_ms": 6830.3,
+      "perplexity": null,
+      "fits_in_ram": true,
+      "ppl_delta": null,
+      "quality_suspicious": false
+    },
+    {
+      "model": "Qwen/Qwen2.5-1.5B-Instruct",
+      "quant": "Q8_0",
+      "build": "kleidiai",
+      "size_mb": 1570.3,
+      "prefill_tps": 50.1,
+      "decode_tps": 5.94,
+      "ttft_ms": 1277.4,
+      "perplexity": null,
+      "fits_in_ram": true,
+      "ppl_delta": null,
+      "quality_suspicious": false
+    }
+  ],
+  "recommendations": {
+    "Qwen/Qwen2.5-0.5B-Instruct": {
+      "model": "Qwen/Qwen2.5-0.5B-Instruct",
+      "quant": "Q4_0",
+      "build": "kleidiai",
+      "size_mb": 335.8,
+      "prefill_tps": 87.47,
+      "decode_tps": 19.3,
+      "ttft_ms": 731.7,
+      "perplexity": null,
+      "fits_in_ram": true,
+      "ppl_delta": null,
+      "quality_suspicious": false
+    },
+    "Qwen/Qwen2.5-1.5B-Instruct": {
+      "model": "Qwen/Qwen2.5-1.5B-Instruct",
+      "quant": "Q4_0",
+      "build": "kleidiai",
+      "size_mb": 891.6,
+      "prefill_tps": 33.88,
+      "decode_tps": 9.27,
+      "ttft_ms": 1889.0,
+      "perplexity": null,
+      "fits_in_ram": true,
+      "ppl_delta": null,
+      "quality_suspicious": false
+    }
+  }
+}</script>
+</body>
+</html>

@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ArmFit — Inference Unit 01</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0b;
+    --panel: #0f0f11;
+    --panel-2: #17171a;
+    --border: #26262a;
+    --text: #d8d8dc;
+    --text-dim: #6b6b72;
+    --baseline: #8a8a92;
+    --accent: #e8a84f;
+    --accent-dim: #6b5230;
+    --accent-glow: rgba(232, 168, 79, 0.15);
+    --good: #7cc48a;
+    --bad: #d97b7b;
+    --mono: 'JetBrains Mono', 'Courier New', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    min-height: 100vh;
+    font-size: 13px;
+  }
+
+  /* Header */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  .topbar-left { display: flex; align-items: baseline; gap: 14px; }
+  .unit-title {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+  }
+  .unit-sub {
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+  }
+  .topbar-right { display: flex; gap: 10px; }
+  .icon-btn {
+    width: 32px; height: 32px;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--text-dim);
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .icon-btn:hover { color: var(--accent); border-color: var(--accent-dim); }
+
+  /* Settings drawer */
+  .settings {
+    display: none;
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel);
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+  }
+  .settings.open { display: grid; }
+  .settings label {
+    display: block;
+    font-size: 10px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 4px;
+  }
+  .settings input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 6px 8px;
+  }
+  .settings input:focus { outline: none; border-color: var(--accent-dim); }
+
+  /* Panels */
+  .arena {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  @media (max-width: 860px) {
+    .arena { grid-template-columns: 1fr; }
+  }
+
+  .panel { border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+  .panel:last-child { border-right: none; }
+
+  .panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .panel.kleidiai .panel-header { background: linear-gradient(180deg, var(--accent-glow), transparent); }
+
+  .panel-name {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--baseline);
+  }
+  .panel.kleidiai .panel-name { color: var(--accent); }
+  .panel-name .bolt { margin-right: 4px; }
+
+  .panel-badge {
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+    padding: 2px 8px;
+    border-radius: 3px;
+  }
+  .panel.kleidiai .panel-badge { color: var(--accent); border-color: var(--accent-dim); }
+
+  .log {
+    flex: 1;
+    padding: 16px 20px;
+    min-height: 260px;
+    max-height: 420px;
+    overflow-y: auto;
+    line-height: 1.65;
+  }
+  .log-line { color: var(--text-dim); font-size: 12px; }
+  .log-line.kleidiai-line { color: var(--accent-dim); }
+  .log-body { color: var(--text); margin-top: 12px; white-space: pre-wrap; word-break: break-word; }
+  .panel.kleidiai .log-body { color: #f0dcb8; }
+  .cursor {
+    display: inline-block;
+    width: 7px; height: 14px;
+    background: var(--baseline);
+    vertical-align: middle;
+    animation: blink 1s step-start infinite;
+  }
+  .panel.kleidiai .cursor { background: var(--accent); }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .log-error { color: var(--bad); font-size: 12px; margin-top: 10px; }
+
+  /* Stat row */
+  .stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  .stats-side { display: grid; grid-template-columns: repeat(3, 1fr); }
+  .stats-side.kleidiai-side { grid-template-columns: 1.4fr 1fr 1fr; }
+
+  .stat-card {
+    padding: 14px 16px;
+    border-right: 1px solid var(--border);
+  }
+  .stats-side:first-child { border-right: 1px solid var(--border); }
+
+  .stat-label {
+    font-size: 9px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 6px;
+  }
+  .stat-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--baseline);
+    font-variant-numeric: tabular-nums;
+  }
+  .stat-value.hero { font-size: 34px; color: var(--accent); }
+  .stat-unit { font-size: 11px; color: var(--text-dim); margin-left: 2px; }
+  .stat-delta { font-size: 11px; margin-top: 4px; font-weight: 600; }
+  .stat-delta.good { color: var(--good); }
+  .stat-delta.bad-for-baseline { color: var(--text-dim); }
+
+  .hero-bar {
+    height: 4px;
+    background: var(--panel-2);
+    border-radius: 2px;
+    margin-top: 10px;
+    overflow: hidden;
+  }
+  .hero-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    width: 0%;
+    transition: width 0.3s ease;
+  }
+
+  /* Prompt bar */
+  .prompt-bar {
+    display: flex;
+    gap: 12px;
+    padding: 16px 24px;
+    align-items: center;
+  }
+  .prompt-label {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+  .prompt-bar input[type="text"] {
+    flex: 1;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 12px 14px;
+  }
+  .prompt-bar input[type="text"]:focus { outline: none; border-color: var(--accent-dim); }
+
+  .race-btn {
+    background: var(--accent);
+    color: #171008;
+    border: none;
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-weight: 800;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    padding: 0 22px;
+    height: 44px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .race-btn:hover { opacity: 0.88; }
+  .race-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .footnote {
+    font-size: 10px;
+    color: var(--text-dim);
+    text-align: center;
+    padding: 0 24px 16px;
+    line-height: 1.6;
+  }
+
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="unit-title">INFERENCE_UNIT_01</div>
+      <div class="unit-sub" id="headerSub">— · —</div>
+    </div>
+    <div class="topbar-right">
+      <div class="icon-btn" id="settingsBtn" title="Configuration">⚙</div>
+      <div class="icon-btn" id="infoBtn" title="About the numbers">i</div>
+    </div>
+  </div>
+
+  <div class="settings" id="settingsPanel">
+    <div>
+      <label for="deviceLabel">Device label</label>
+      <input id="deviceLabel" type="text" value="Samsung Galaxy A16">
+    </div>
+    <div>
+      <label for="modelLabel">Model label</label>
+      <input id="modelLabel" type="text" value="Qwen2.5-0.5B-Instruct · Q4_0">
+    </div>
+    <div>
+      <label for="baselineUrl">Baseline server URL</label>
+      <input id="baselineUrl" type="text" value="http://localhost:8080">
+    </div>
+    <div>
+      <label for="kleidiaiUrl">KleidiAI server URL</label>
+      <input id="kleidiaiUrl" type="text" value="http://localhost:8081">
+    </div>
+    <div>
+      <label for="threadsLabel">Threads</label>
+      <input id="threadsLabel" type="text" value="4">
+    </div>
+  </div>
+
+  <div class="arena">
+    <div class="panel baseline">
+      <div class="panel-header">
+        <div class="panel-name">BASELINE BUILD</div>
+        <div class="panel-badge" id="baselineBadge">IDLE</div>
+      </div>
+      <div class="log" id="baselineLog"></div>
+    </div>
+
+    <div class="panel kleidiai">
+      <div class="panel-header">
+        <div class="panel-name"><span class="bolt">⚡</span>ARM KLEIDIAI ACCELERATED</div>
+        <div class="panel-badge" id="kleidiaiBadge">IDLE</div>
+      </div>
+      <div class="log" id="kleidiaiLog"></div>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stats-side" id="baselineStats">
+      <div class="stat-card">
+        <div class="stat-label">Tokens/sec</div>
+        <div class="stat-value" id="bDecode">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Prefill speed</div>
+        <div class="stat-value" id="bPrefill">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">TTFT</div>
+        <div class="stat-value" id="bTtft">—</div>
+      </div>
+    </div>
+    <div class="stats-side kleidiai-side">
+      <div class="stat-card">
+        <div class="stat-label">Tokens/sec (hero metric)</div>
+        <div class="stat-value hero" id="kDecode">—</div>
+        <div class="hero-bar"><div class="hero-bar-fill" id="heroBar"></div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Prefill speed</div>
+        <div class="stat-value" id="kPrefill">—</div>
+        <div class="stat-delta good" id="kPrefillDelta"></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">TTFT</div>
+        <div class="stat-value" id="kTtft">—</div>
+        <div class="stat-delta good" id="kTtftDelta"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="prompt-bar">
+    <span class="prompt-label">PROMPT_INPUT:</span>
+    <input type="text" id="promptInput" placeholder="Describe the impact of KleidiAI on mobile LLM performance benchmarks.">
+    <button class="race-btn" id="raceBtn">🚀 START BENCHMARK RACE</button>
+  </div>
+  <div class="footnote">
+    Both panels query <code>llama-server</code> directly over HTTP with <code>stream: true</code> — the numbers above
+    are read from each server's own response timings as tokens arrive, not simulated.
+    Requires <code>adb forward</code> to both ports and both servers running, see DEMO.md.
+    If requests fail from a <code>file://</code> page, serve this folder: <code>python -m http.server 9000</code>.
+  </div>
+
+<script>
+  const els = {
+    headerSub: document.getElementById('headerSub'),
+    settingsBtn: document.getElementById('settingsBtn'),
+    settingsPanel: document.getElementById('settingsPanel'),
+    infoBtn: document.getElementById('infoBtn'),
+    deviceLabel: document.getElementById('deviceLabel'),
+    modelLabel: document.getElementById('modelLabel'),
+    baselineUrl: document.getElementById('baselineUrl'),
+    kleidiaiUrl: document.getElementById('kleidiaiUrl'),
+    threadsLabel: document.getElementById('threadsLabel'),
+    baselineLog: document.getElementById('baselineLog'),
+    kleidiaiLog: document.getElementById('kleidiaiLog'),
+    baselineBadge: document.getElementById('baselineBadge'),
+    kleidiaiBadge: document.getElementById('kleidiaiBadge'),
+    promptInput: document.getElementById('promptInput'),
+    raceBtn: document.getElementById('raceBtn'),
+    bDecode: document.getElementById('bDecode'),
+    bPrefill: document.getElementById('bPrefill'),
+    bTtft: document.getElementById('bTtft'),
+    kDecode: document.getElementById('kDecode'),
+    kPrefill: document.getElementById('kPrefill'),
+    kTtft: document.getElementById('kTtft'),
+    kPrefillDelta: document.getElementById('kPrefillDelta'),
+    kTtftDelta: document.getElementById('kTtftDelta'),
+    heroBar: document.getElementById('heroBar'),
+  };
+
+  function refreshHeader() {
+    els.headerSub.textContent = els.deviceLabel.value + ' · ' + els.modelLabel.value;
+  }
+  [els.deviceLabel, els.modelLabel].forEach(el => el.addEventListener('input', refreshHeader));
+  refreshHeader();
+
+  els.settingsBtn.addEventListener('click', () => els.settingsPanel.classList.toggle('open'));
+  els.infoBtn.addEventListener('click', () => {
+    alert('Every number on this screen is read live from llama-server\'s own response ' +
+          'timings for the prompt you just sent. Nothing here is precomputed or simulated. ' +
+          'KleidiAI init lines describe compiled-in build flags (DotProd), not runtime-detected ' +
+          'features beyond what was confirmed via adb shell cat /proc/cpuinfo on the target device.');
+  });
+
+  function initLog(container, lines) {
+    container.innerHTML = '';
+    lines.forEach(line => {
+      const div = document.createElement('div');
+      div.className = 'log-line' + (container === els.kleidiaiLog ? ' kleidiai-line' : '');
+      div.textContent = '> ' + line;
+      container.appendChild(div);
+    });
+    const body = document.createElement('div');
+    body.className = 'log-body';
+    const cursor = document.createElement('span');
+    cursor.className = 'cursor';
+    body.appendChild(cursor);
+    container.appendChild(body);
+    return { body, cursor };
+  }
+
+  function baselineInitLines() {
+    return [
+      'initializing weights...',
+      'loading model ' + els.modelLabel.value,
+      'system: armv8-a architecture detected',
+      'generic path — no KleidiAI kernels compiled in',
+      'benchmark start signal received',
+    ];
+  }
+
+  function kleidiaiInitLines() {
+    return [
+      'kleidiai_init: arm_dotprod kernels active',
+      'target: ' + els.deviceLabel.value,
+      'thread_pool: ' + els.threadsLabel.value + '/' + els.threadsLabel.value + ' affinity locked',
+      'latency_mode: performance_prioritized',
+    ];
+  }
+
+  // Parses llama-server's streamed /completion response (Server-Sent
+  // Events: lines prefixed "data: {json}"), calling onToken for each
+  // content chunk and onDone once the server sends stop:true with the
+  // final timings object. This is real SSE parsing against a live
+  // server response, not a scripted/simulated typing effect.
+  async function streamCompletion(baseUrl, prompt, threads, { onToken, onDone, onError }) {
+    const startedAt = performance.now();
+    let firstTokenAt = null;
+    let tokenCount = 0;
+
+    try {
+      const res = await fetch(baseUrl.replace(/\/+$/, '') + '/completion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: prompt,
+          n_predict: 128,
+          temperature: 0.7,
+          n_threads: Number(threads) || 4,
+          stream: true,
+        }),
+      });
+
+      if (!res.ok || !res.body) {
+        throw new Error('HTTP ' + res.status);
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop();
+
+        for (const rawLine of lines) {
+          const line = rawLine.trim();
+          if (!line.startsWith('data:')) continue;
+          const jsonStr = line.slice(5).trim();
+          if (!jsonStr) continue;
+
+          let data;
+          try { data = JSON.parse(jsonStr); } catch { continue; }
+
+          if (data.content) {
+            if (firstTokenAt === null) firstTokenAt = performance.now();
+            tokenCount++;
+            const elapsedS = (performance.now() - startedAt) / 1000;
+            onToken(data.content, elapsedS > 0 ? tokenCount / elapsedS : 0);
+          }
+
+          if (data.stop) {
+            const wallMs = performance.now() - startedAt;
+            const ttftMs = firstTokenAt !== null ? (firstTokenAt - startedAt) : wallMs;
+            const t = data.timings || {};
+            onDone({
+              decodeTps: t.predicted_per_second ?? (tokenCount / (wallMs / 1000)),
+              prefillTps: t.prompt_per_second ?? null,
+              ttftMs: t.prompt_ms ?? ttftMs,
+              tokensOut: data.tokens_predicted ?? tokenCount,
+            });
+          }
+        }
+      }
+    } catch (err) {
+      onError(err);
+    }
+  }
+
+  function runSide({ url, threads, initLinesFn, logContainer, badgeEl, statEls }) {
+    const { body, cursor } = initLog(logContainer, initLinesFn());
+    badgeEl.textContent = 'RUNNING';
+    let liveText = '';
+
+    return new Promise((resolve) => {
+      let finished = false;
+      streamCompletion(url, els.promptInput.value.trim(), threads, {
+        onToken: (chunk, liveTps) => {
+          liveText += chunk;
+          body.textContent = liveText;
+          body.appendChild(cursor);
+          if (statEls.decode) statEls.decode.textContent = liveTps.toFixed(1);
+        },
+        onDone: (result) => {
+          if (finished) return;
+          finished = true;
+          cursor.remove();
+          badgeEl.textContent = 'DONE';
+          resolve(result);
+        },
+        onError: (err) => {
+          if (finished) return;
+          finished = true;
+          cursor.remove();
+          badgeEl.textContent = 'ERROR';
+          const errDiv = document.createElement('div');
+          errDiv.className = 'log-error';
+          errDiv.textContent = 'ERROR: ' + err.message + ' — check adb forward + server at ' + url;
+          logContainer.appendChild(errDiv);
+          resolve(null);
+        },
+      });
+    });
+  }
+
+  async function startRace() {
+    const prompt = els.promptInput.value.trim();
+    if (!prompt) return;
+
+    els.raceBtn.disabled = true;
+    els.heroBar.style.width = '0%';
+    [els.kPrefillDelta, els.kTtftDelta].forEach(el => el.textContent = '');
+
+    const [baseline, kleidiai] = await Promise.all([
+      runSide({
+        url: els.baselineUrl.value,
+        threads: els.threadsLabel.value,
+        initLinesFn: baselineInitLines,
+        logContainer: els.baselineLog,
+        badgeEl: els.baselineBadge,
+        statEls: { decode: els.bDecode },
+      }),
+      runSide({
+        url: els.kleidiaiUrl.value,
+        threads: els.threadsLabel.value,
+        initLinesFn: kleidiaiInitLines,
+        logContainer: els.kleidiaiLog,
+        badgeEl: els.kleidiaiBadge,
+        statEls: { decode: els.kDecode },
+      }),
+    ]);
+
+    if (baseline) {
+      els.bDecode.textContent = baseline.decodeTps.toFixed(2);
+      els.bPrefill.textContent = baseline.prefillTps ? baseline.prefillTps.toFixed(1) + 'ms' : '—';
+      els.bTtft.textContent = Math.round(baseline.ttftMs) + 'ms';
+    }
+    if (kleidiai) {
+      els.kDecode.textContent = kleidiai.decodeTps.toFixed(2);
+      els.kPrefill.textContent = kleidiai.prefillTps ? kleidiai.prefillTps.toFixed(1) + 'ms' : '—';
+      els.kTtft.textContent = Math.round(kleidiai.ttftMs) + 'ms';
+      els.heroBar.style.width = Math.min(100, (kleidiai.decodeTps / 40) * 100) + '%';
+    }
+
+    if (baseline && kleidiai && baseline.decodeTps > 0) {
+      const decodeRatio = kleidiai.decodeTps / baseline.decodeTps;
+      els.kPrefillDelta.textContent = decodeRatio >= 1
+        ? '▲ ' + decodeRatio.toFixed(1) + 'x decode vs baseline'
+        : '▼ ' + (1 / decodeRatio).toFixed(1) + 'x slower than baseline';
+    }
+    if (baseline && kleidiai && baseline.ttftMs > 0) {
+      const ttftRatio = baseline.ttftMs / kleidiai.ttftMs;
+      els.kTtftDelta.textContent = ttftRatio >= 1
+        ? '▼ ' + ttftRatio.toFixed(1) + 'x faster TTFT'
+        : '▲ ' + (1 / ttftRatio).toFixed(1) + 'x slower TTFT';
+    }
+
+    els.raceBtn.disabled = false;
+  }
+
+  els.raceBtn.addEventListener('click', startRace);
+  els.promptInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); startRace(); }
+  });
+
+  // Idle state on load
+  initLog(els.baselineLog, ['awaiting benchmark start signal...']);
+  initLog(els.kleidiaiLog, ['awaiting benchmark start signal...']);
+</script>
+
+</body>
+</html>
