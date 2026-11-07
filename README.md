@@ -61,7 +61,7 @@ I8MM not supported), running Qwen2.5-0.5B-Instruct, ~4.2 GB free RAM at test tim
 | Q8_0 | kleidiai | 506.5 | **156.09** | **21.51** | **410.0** |
 
 **Recommendation: Q4_0 quantization, KleidiAI build** — 27.0 tok/s decode
-(3.6x faster than the same quant level without KleidiAI), 335.8 MB on disk,
+(2.4x faster than the same quant level without KleidiAI), 335.8 MB on disk,
 TTFT cut from 2.3s to 0.6s.
 
 **Two findings worth calling out explicitly:**
